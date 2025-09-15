@@ -1,9 +1,10 @@
 import numpy as np
 import pyaudio as pa
+from enum import auto, Enum
 from numpy import ndarray, dtype
+from typing import Callable, NamedTuple, Any
 
 from music_utils import Note
-from typing import Callable, NamedTuple, Any
 
 
 # Waveforms
@@ -23,7 +24,7 @@ def square(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
 
 def sawtooth(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
     """
-    Sqwtooth shaped wave rising linearly from -1 to 1 and wraps
+    Sawtooth shaped wave rising linearly from -1 to 1 and wraps
     back to -1
     """
     return ((t % np.pi) / np.pi - 0.5) * 2
@@ -38,10 +39,21 @@ def triangle(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
     return np.where(0 < np.cos(t), up_t, down_t)
 
 Waveform = Callable[[np.ndarray[float]], ndarray[tuple[Any, ...], dtype[Any]]]
+class Wave(Enum):
+    SIN = auto(), sin
+    SQUARE = auto(), square
+    SAWTOOTH = auto(), sawtooth
+    TRIANGLE = auto(), triangle
+
+    def __init__(self, value: str, waveform: Waveform):
+        self._waveform = waveform
+
+    def __call__(self, t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
+        return self._waveform(t)
 
 class PlayingNote(NamedTuple):
     note: np.float64
-    waveform: str
+    waveform: Wave
 
 
 class NotePlayer:
@@ -49,13 +61,6 @@ class NotePlayer:
     Holds a PyAudio object and manages how notes are played
     continuously.
     """
-    WAVE_GENERATORS: dict[str: Waveform] = {
-        'sin': sin,
-        'square': square,
-        'sawtooth': sawtooth,
-        'triangle': triangle
-    }
-
     def __init__(self, sample_freq: int, buffer_size: float):
         self._sample_freq: int = sample_freq
         self._buffer_size: int = int(buffer_size * sample_freq)
@@ -73,7 +78,7 @@ class NotePlayer:
             self._stream.close()
             self._player.terminate()
 
-    def _add_note_to_queue(self, note: Note, waveform: str, new_queue: dict[PlayingNote: tuple[float, float]]):
+    def _add_note_to_queue(self, note: Note, waveform: Wave, new_queue: dict[PlayingNote: tuple[float, float]]):
         """
         Inserts a note into the queue to be played, and ensures continuity.
         """
@@ -88,7 +93,7 @@ class NotePlayer:
             key = PlayingNote(note.freq, waveform)
             new_queue[key] = (self._base_func * note.freq / self._sample_freq, 0.1)
 
-    def set_notes(self, notes: list[Note], waveforms: list[str]):
+    def set_notes(self, notes: list[Note], waveforms: list[Wave]):
         """
         Prepare queue of notes to be played.
         """
@@ -107,7 +112,7 @@ class NotePlayer:
         note_data: tuple[np.ndarray[float], float]
 
         for playing_note, note_data in self._notes_queue.items():
-            wave_gen: Waveform = self.WAVE_GENERATORS[playing_note.waveform]
+            wave_gen: Waveform = playing_note.waveform
             wave: np.ndarray[tuple[Any, ...], dtype[Any]] = wave_gen(note_data[0]) * note_data[1]
             component_waves.append(wave.astype(np.float32))
         if component_waves:

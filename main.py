@@ -1,5 +1,5 @@
 from music_utils import major, minor, Note
-from player import NotePlayer
+from player import NotePlayer, Wave
 
 
 def main():
@@ -7,8 +7,8 @@ def main():
     player = NotePlayer(44100, 1.2 / subdivision)
     while True:
         try:
-            notes = major('A4')
-            player.set_notes(notes, ['sawtooth' for _ in notes])
+            notes = minor('A4')
+            player.set_notes(notes, [Wave.SQUARE for _ in notes])
             player.play()
         except KeyboardInterrupt:
             break
