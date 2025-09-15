@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import numpy as np
 import re
 
+from typing import Self
 
-def flat(delta):
+
+def flat(delta: int) -> int:
     """
     Lower a delta without octaves by one semitone.
     """
     return (delta - 1) % 12
 
 
-def sharp(delta):
+def sharp(delta: int) -> int:
     """
     Raise a delta without octaves by one semitone.
     """
@@ -17,14 +21,14 @@ def sharp(delta):
 
 
 # These dicts match each note on the scale to the delta from A.
-NAT_DELTAS = {'A': 0, 'B': 2, 'C': 3, 'D': 5, 'E': 7, 'F': 8, 'G': 10}
-FLAT_DELTAS = {f'{note}b': flat(delta) for note, delta in NAT_DELTAS.items()}
-SHARP_DELTAS = {f'{note}#': sharp(delta) for note, delta in NAT_DELTAS.items()}
-DELTAS = {**NAT_DELTAS, **FLAT_DELTAS, **SHARP_DELTAS}
+NAT_DELTAS: dict[str: int] = {'A': 0, 'B': 2, 'C': 3, 'D': 5, 'E': 7, 'F': 8, 'G': 10}
+FLAT_DELTAS: dict[str: int] = {f'{note}b': flat(delta) for note, delta in NAT_DELTAS.items()}
+SHARP_DELTAS: dict[str: int] = {f'{note}#': sharp(delta) for note, delta in NAT_DELTAS.items()}
+DELTAS: dict[str: int] = {**NAT_DELTAS, **FLAT_DELTAS, **SHARP_DELTAS}
 
 # This dict is the inverse of DELTAS, matches deltas from A to lists of their
 # corresponding notes.
-FROM_DELTAS = {delta: [note for note in DELTAS.keys() if DELTAS[note] == delta] for delta in DELTAS.values()}
+FROM_DELTAS: dict[int: list[str]] = {delta: [note for note in DELTAS.keys() if DELTAS[note] == delta] for delta in DELTAS.values()}
 
 
 class Interval:
@@ -32,13 +36,13 @@ class Interval:
     This class represents an interval between notes, such as an
     octave or a fifth.
     """
-    SEMITONE_FACTOR = np.power(2, 1/12)
+    SEMITONE_FACTOR: float = np.power(2, 1/12)
 
-    def __init__(self, semitones, octaves):
+    def __init__(self, semitones: int, octaves: int):
         self.semitones = semitones + 12 * octaves
         self.factor = np.power(self.SEMITONE_FACTOR, self.semitones)
 
-    def __add__(self, other):
+    def __add__(self, other: Self) -> Self:
         """
         Adding two intervals creates a new interval that corresponds
         to applying both.
@@ -47,7 +51,7 @@ class Interval:
         semitone_interval = self.semitones + other.semitones
         return Interval(semitone_interval % 12, semitone_interval // 12)
 
-    def __sub__(self, other):
+    def __sub__(self, other: Self) -> Self:
         assert isinstance(other, Interval)
         semitone_interval = self.semitones - other.semitones
         return Interval(semitone_interval % 12, semitone_interval // 12)
@@ -56,7 +60,7 @@ class Interval:
         return f'I({self.semitones})'
 
     @staticmethod
-    def from_delta(delta):
+    def from_delta(delta: int) -> Interval:
         """
         Returns an Interval object from single number of semitones.
         """
@@ -73,7 +77,7 @@ class Note:
     BASE_FREQUENCY = 55.0  # Frequency of A1
     NAME_PATTERN = r'([A-G][\#b]?)(\d)'
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         self._note, self._octave = re.match(self.NAME_PATTERN, name).groups()
         self._octave = int(self._octave)
         semitone_delta = DELTAS[self._note]
@@ -82,10 +86,10 @@ class Note:
         self.freq = self.BASE_FREQUENCY * interval.factor
 
     @property
-    def delta(self):
+    def delta(self) -> int:
         return 12 * self._octave + DELTAS[self._note]
 
-    def __sub__(self, other):
+    def __sub__(self, other: Self) -> Interval:
         """
         Difference between notes is an interval
         """
@@ -95,7 +99,7 @@ class Note:
         else:
             raise ValueError(f"Subtraction unsupported for Note with type {type(other)}.")
 
-    def __mul__(self, other):
+    def __mul__(self, other: Interval) -> Self:
         """
         Interval applied to note is a new note shifted by
         that interval.
@@ -108,7 +112,7 @@ class Note:
             name = f'{note}{octave}'
             return Note(name)
         else:
-            raise ValueError(f"Multipliction unsupported for Note with type {type(other)}.")
+            raise ValueError(f"Multiplication unsupported for Note with type {type(other)}.")
 
     def __repr__(self):
         return f'{self._note}{self._octave}'
