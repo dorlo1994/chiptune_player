@@ -1,0 +1,147 @@
+import numpy as np
+import re
+
+
+def flat(delta):
+    """
+    Lower a delta without octaves by one semitone.
+    """
+    return (delta - 1) % 12
+
+
+def sharp(delta):
+    """
+    Raise a delta without octaves by one semitone.
+    """
+    return (delta + 1) % 12
+
+
+# These dicts match each note on the scale to the delta from A.
+NAT_DELTAS = {'A': 0, 'B': 2, 'C': 3, 'D': 5, 'E': 7, 'F': 8, 'G': 10}
+FLAT_DELTAS = {f'{note}b': flat(delta) for note, delta in NAT_DELTAS.items()}
+SHARP_DELTAS = {f'{note}#': sharp(delta) for note, delta in NAT_DELTAS.items()}
+DELTAS = {**NAT_DELTAS, **FLAT_DELTAS, **SHARP_DELTAS}
+
+# This dict is the inverse of DELTAS, matches deltas from A to lists of their
+# corresponding notes.
+FROM_DELTAS = {delta: [note for note in DELTAS.keys() if DELTAS[note] == delta] for delta in DELTAS.values()}
+
+
+class Interval:
+    """
+    This class represents an interval between notes, such as an
+    octave or a fifth.
+    """
+    SEMITONE_FACTOR = np.power(2, 1/12)
+
+    def __init__(self, semitones, octaves):
+        self.semitones = semitones + 12 * octaves
+        self.factor = np.power(self.SEMITONE_FACTOR, self.semitones)
+
+    def __add__(self, other):
+        """
+        Adding two intervals creates a new interval that corresponds
+        to applying both.
+        """
+        assert isinstance(other, Interval)
+        semitone_interval = self.semitones + other.semitones
+        return Interval(semitone_interval % 12, semitone_interval // 12)
+
+    def __sub__(self, other):
+        assert isinstance(other, Interval)
+        semitone_interval = self.semitones - other.semitones
+        return Interval(semitone_interval % 12, semitone_interval // 12)
+
+    def __repr__(self):
+        return f'I({self.semitones})'
+
+    @staticmethod
+    def from_delta(delta):
+        """
+        Returns an Interval object from single number of semitones.
+        """
+        octaves = delta // 12
+        semitones = delta - 12 * octaves
+        return Interval(semitones, octaves)
+
+
+class Note:
+    """
+    This class holds represents a Note on the piano,
+    calculates the frequency corresponding to it
+    """
+    BASE_FREQUENCY = 55.0  # Frequency of A1
+    NAME_PATTERN = r'([A-G][\#b]?)(\d)'
+
+    def __init__(self, name):
+        self._note, self._octave = re.match(self.NAME_PATTERN, name).groups()
+        self._octave = int(self._octave)
+        semitone_delta = DELTAS[self._note]
+        octave_delta = self._octave - 1
+        interval = Interval(semitone_delta, octave_delta)
+        self.freq = self.BASE_FREQUENCY * interval.factor
+
+    @property
+    def delta(self):
+        return 12 * self._octave + DELTAS[self._note]
+
+    def __sub__(self, other):
+        """
+        Difference between notes is an interval
+        """
+        if isinstance(other, Note):
+            delta = self.delta - other.delta
+            return Interval.from_delta(delta)
+        else:
+            raise ValueError(f"Subtraction unsupported for Note with type {type(other)}.")
+
+    def __mul__(self, other):
+        """
+        Interval applied to note is a new note shifted by
+        that interval.
+        """
+        if isinstance(other, Interval):
+            delta = self.delta + other.semitones
+            semitone_delta = delta % 12
+            note = FROM_DELTAS[semitone_delta][0]
+            octave = delta // 12
+            name = f'{note}{octave}'
+            return Note(name)
+        else:
+            raise ValueError(f"Multipliction unsupported for Note with type {type(other)}.")
+
+    def __repr__(self):
+        return f'{self._note}{self._octave}'
+
+    def __eq__(self, other):
+        return self.delta == other.delta
+
+
+# Consts to calculate major and minor chords
+MAJOR_THIRD = Note('E4') - Note('C4')
+MINOR_THIRD = Note('G4') - Note('E4')
+FIFTH = MAJOR_THIRD + MINOR_THIRD
+
+
+def major(note):
+    """
+    Creates a major chord with the given note as the base.
+    Returns a list of notes.
+    """
+    if isinstance(note, str):
+        note = Note(note)
+    return [note,
+            note * MAJOR_THIRD,
+            note * FIFTH]
+
+
+def minor(note):
+    """
+    Creates a minor chord with the given note as the base.
+    Returns a list of notes.
+    """
+    if isinstance(note, str):
+        note = Note(note)
+    return [note,
+            note * MINOR_THIRD,
+            note * FIFTH]
