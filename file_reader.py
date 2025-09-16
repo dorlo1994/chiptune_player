@@ -55,6 +55,9 @@ class NoteSheet:
             return_str += ''.join([f'{beat}: ', *[str(note) for note in line], '\n'])
         return return_str
 
+    def get_notes(self) -> list[list[ReadNote]]:
+        return self._sheet
+
 
 class MusicFileReader:
     def __init__(self, filename, mode="r", encoding="utf-8"):
