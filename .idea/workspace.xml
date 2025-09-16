@@ -4,8 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="bff21e70-3f4d-41d7-80e9-ed1bbef9b25e" name="Changes" comment="Rework wave dict into Enum with new call.">
+    <list default="true" id="bff21e70-3f4d-41d7-80e9-ed1bbef9b25e" name="Changes" comment="Started work on reading more complex notation">
+      <change afterPath="$PROJECT_DIR$/notes.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/file_reader.py" beforeDir="false" afterPath="$PROJECT_DIR$/file_reader.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/music_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/music_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/player.py" beforeDir="false" afterPath="$PROJECT_DIR$/player.py" afterDir="false" />
@@ -38,17 +40,17 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.file_reader.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.player.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.file_reader.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.player.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -88,13 +90,22 @@
       <option name="project" value="LOCAL" />
       <updated>1757953060933</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Started work on reading more complex notation">
+      <option name="closed" value="true" />
+      <created>1758024753215</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1758024753215</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Imported code from HAILO Hackathon" />
     <MESSAGE value="Type hints and working POC" />
     <MESSAGE value="Rework wave dict into Enum with new call." />
-    <option name="LAST_COMMIT_MESSAGE" value="Rework wave dict into Enum with new call." />
+    <MESSAGE value="Started work on reading more complex notation" />
+    <option name="LAST_COMMIT_MESSAGE" value="Started work on reading more complex notation" />
   </component>
 </project>

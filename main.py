@@ -1,22 +1,16 @@
-from music_utils import major, minor, Note
-from player import NotePlayer, Wave
-from file_reader import NoteSheet
+from player import NotePlayer
+from file_reader import MusicFileReader, NoteSheet
 
 
 def main():
     subdivision = 100
+    note_filename = 'notes.txt'
+    with MusicFileReader(note_filename) as reader:
+        note_sheet: NoteSheet = reader.read_notes()
+
+    print(note_sheet, note_sheet.play_time)
     player = NotePlayer(44100, 1.2 / subdivision)
-    note_sheet = NoteSheet(160)
-    read_note_str = [['0', 'E4-sin-1']]
-    note_sheet.set_notes(read_note_str)
-    print(note_sheet.read_notes())
-    while True:
-        try:
-            notes = [*minor('E4')]
-            player.set_notes(notes, [Wave.TRIANGLE for _ in notes])
-            player.play()
-        except KeyboardInterrupt:
-            break
+    player.play_from_sheet_music(note_sheet)
 
 
 if __name__ == "__main__":

@@ -1,77 +1,28 @@
 import numpy as np
 import pyaudio as pa
-from enum import auto, Enum
-from numpy import ndarray, dtype
-from typing import Callable, NamedTuple, Any, Self
+from numpy import dtype
+from typing import NamedTuple, Any
 
 from file_reader import NoteSheet
-from music_utils import Note
+from music_utils import Note, Wave, Waveform
 
-
-# Waveforms
-def sin(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
-    """
-    Sine wave
-    """
-    return np.sin(t)
-
-
-def square(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
-    """
-    Square wave going directly from 1 to -1 and back.
-    """
-    return np.where(np.sin(t) > 0, 1.0, -1.0)
-
-
-def sawtooth(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
-    """
-    Sawtooth shaped wave rising linearly from -1 to 1 and wraps
-    back to -1
-    """
-    return ((t % np.pi) / np.pi - 0.5) * 2
-
-
-def triangle(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
-    """
-    Triangle wave going linearly between 1 and -1
-    """
-    up_t = ((2 * (t - np.pi / 2)) % (2 * np.pi)) / np.pi - 1
-    down_t = ((-2 * (t - np.pi / 2)) % (2 * np.pi)) / np.pi - 1
-    return np.where(0 < np.cos(t), up_t, down_t)
-
-Waveform = Callable[[np.ndarray[float]], ndarray[tuple[Any, ...], dtype[Any]]]
-
-class Wave(Enum):
-    SIN = auto(), sin
-    SQUARE = auto(), square
-    SAWTOOTH = auto(), sawtooth
-    TRIANGLE = auto(), triangle
-
-    def __init__(self, value, waveform: Waveform):
-        self._waveform = waveform
-
-    def __call__(self, t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
-        return self._waveform(t)
-
-    def __repr__(self):
-        return self._waveform.__name__
-
-    def __str__(self):
-        return self._waveform.__name__
-
-    @classmethod
-    def from_name(cls, name: str) -> Self:
-        from_names = {str(member): member for member in cls}
-        return from_names[name]
-
-    @classmethod
-    def name_pattern(cls) -> str:
-        return f'(?P<Waveform>{'|'.join([str(member) for member in cls])})'
-
-class PlayingNote(NamedTuple):
+class Sound(NamedTuple):
     note: np.float64
     waveform: Wave
 
+class PlayingNote:
+    def __init__(self, sound: Sound, duration_in_seconds: float):
+        self._sound = sound
+        self._duration = duration_in_seconds
+        self._remaining_duration = self._duration
+
+    def decrease_duration(self, decrease: float):
+        if self.alive:
+            self._remaining_duration -= decrease
+
+    @property
+    def alive(self):
+        return self._remaining_duration > 0
 
 class NotePlayer:
     """
@@ -87,7 +38,7 @@ class NotePlayer:
                                          channels=1,
                                          rate=self._sample_freq,
                                          output=True)
-        self._notes_queue: dict[PlayingNote: tuple[list[float], float]] = dict()
+        self._notes_queue: dict[Sound: tuple[list[float], float]] = dict()
         self._base_func: np.ndarray[dtype: np.float32] = 2 * np.pi * np.arange(self._buffer_size)
 
     def __del__(self):
@@ -96,32 +47,38 @@ class NotePlayer:
             self._stream.close()
             self._player.terminate()
 
-    def _add_note_to_queue(self, note: Note, waveform: Wave, new_queue: dict[PlayingNote: tuple[float, float]]):
+    def _add_note_to_queue(self, note: Note, waveform: Wave, new_queue: dict[Sound: tuple[float, float]]):
         """
         Inserts a note into the queue to be played, and ensures continuity.
         """
         found_note = False
-        for playing_note in self._notes_queue.keys():
-            if playing_note.note == note.freq and playing_note.waveform == waveform:
-                new_queue[playing_note] = (self._notes_queue[playing_note][0][-1] + self._base_func * playing_note.note / self._sample_freq,
-                                           (self._notes_queue[playing_note][1] + 1) / 2)
+        for sound in self._notes_queue.keys():
+            if sound.note == note.freq and sound.waveform == waveform:
+                new_queue[sound] = (self._notes_queue[sound][0][-1] + self._base_func * sound.note / self._sample_freq,
+                                           (self._notes_queue[sound][1] + 1) / 2)
                 found_note = True
                 break
         if not found_note:
-            key = PlayingNote(note.freq, waveform)
+            key = Sound(note.freq, waveform)
             new_queue[key] = (self._base_func * note.freq / self._sample_freq, 0.1)
 
     def set_notes(self, notes: list[Note], waveforms: list[Wave]):
         """
         Prepare queue of notes to be played.
         """
-        new_queue: dict[PlayingNote: tuple[list[float], float]] = dict()
+        new_queue: dict[Sound: tuple[list[float], float]] = dict()
         for note, waveform in zip(notes, waveforms):
             self._add_note_to_queue(note, waveform, new_queue)
         self._notes_queue = new_queue
 
-    def read_sheet_music(self, note_sheet: NoteSheet):
-        ...
+    def play_from_sheet_music(self, note_sheet: NoteSheet):
+        beat_time = note_sheet.beat_time
+        play_time = note_sheet.play_time
+        total_samples = self._sample_freq * play_time
+        num_buffers = total_samples / self._buffer_size
+        print(f'Number of available buffers: {num_buffers}')
+        print(f'Number of buffers per beat: {num_buffers * (beat_time / play_time)}')
+
 
     def play(self):
         """
@@ -129,11 +86,11 @@ class NotePlayer:
         the buffer to play them.
         """
         component_waves: list[np.ndarray[dtype[np.float32]]] = []
-        playing_note: PlayingNote
+        sound: Sound
         note_data: tuple[np.ndarray[float], float]
 
-        for playing_note, note_data in self._notes_queue.items():
-            wave_gen: Waveform = playing_note.waveform
+        for sound, note_data in self._notes_queue.items():
+            wave_gen: Waveform = sound.waveform
             wave: np.ndarray[tuple[Any, ...], dtype[Any]] = wave_gen(note_data[0]) * note_data[1]
             component_waves.append(wave.astype(np.float32))
         if component_waves:

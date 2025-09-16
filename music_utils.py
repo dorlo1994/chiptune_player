@@ -3,7 +3,9 @@ from __future__ import annotations
 import numpy as np
 import re
 
-from typing import Self
+from enum import auto, Enum
+from numpy import ndarray, dtype
+from typing import Callable, NamedTuple, Any, Self
 
 
 def flat(delta: int) -> int:
@@ -149,3 +151,63 @@ def minor(note):
     return [note,
             note * MINOR_THIRD,
             note * FIFTH]
+
+# Waveforms
+def sin(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
+    """
+    Sine wave
+    """
+    return np.sin(t)
+
+
+def square(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
+    """
+    Square wave going directly from 1 to -1 and back.
+    """
+    return np.where(np.sin(t) > 0, 1.0, -1.0)
+
+
+def sawtooth(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
+    """
+    Sawtooth shaped wave rising linearly from -1 to 1 and wraps
+    back to -1
+    """
+    return ((t % np.pi) / np.pi - 0.5) * 2
+
+
+def triangle(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
+    """
+    Triangle wave going linearly between 1 and -1
+    """
+    up_t = ((2 * (t - np.pi / 2)) % (2 * np.pi)) / np.pi - 1
+    down_t = ((-2 * (t - np.pi / 2)) % (2 * np.pi)) / np.pi - 1
+    return np.where(0 < np.cos(t), up_t, down_t)
+
+Waveform = Callable[[np.ndarray[float]], ndarray[tuple[Any, ...], dtype[Any]]]
+
+class Wave(Enum):
+    SIN = auto(), sin
+    SQUARE = auto(), square
+    SAWTOOTH = auto(), sawtooth
+    TRIANGLE = auto(), triangle
+
+    def __init__(self, value, waveform: Waveform):
+        self._waveform = waveform
+
+    def __call__(self, t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
+        return self._waveform(t)
+
+    def __repr__(self):
+        return self._waveform.__name__
+
+    def __str__(self):
+        return self._waveform.__name__
+
+    @classmethod
+    def from_name(cls, name: str) -> Self:
+        from_names = {str(member): member for member in cls}
+        return from_names[name]
+
+    @classmethod
+    def name_pattern(cls) -> str:
+        return f'(?P<Waveform>{'|'.join([str(member) for member in cls])})'
