@@ -75,7 +75,7 @@ class Note:
     calculates the frequency corresponding to it
     """
     BASE_FREQUENCY = 55.0  # Frequency of A1
-    NAME_PATTERN = r'([A-G][\#b]?)(\d)'
+    NAME_PATTERN = r'(?P<Note>[A-G](?:#|b)?)(?P<Octave>\d+)'
 
     def __init__(self, name: str):
         self._note, self._octave = re.match(self.NAME_PATTERN, name).groups()

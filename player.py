@@ -2,8 +2,9 @@ import numpy as np
 import pyaudio as pa
 from enum import auto, Enum
 from numpy import ndarray, dtype
-from typing import Callable, NamedTuple, Any
+from typing import Callable, NamedTuple, Any, Self
 
+from file_reader import NoteSheet
 from music_utils import Note
 
 
@@ -39,17 +40,33 @@ def triangle(t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
     return np.where(0 < np.cos(t), up_t, down_t)
 
 Waveform = Callable[[np.ndarray[float]], ndarray[tuple[Any, ...], dtype[Any]]]
+
 class Wave(Enum):
     SIN = auto(), sin
     SQUARE = auto(), square
     SAWTOOTH = auto(), sawtooth
     TRIANGLE = auto(), triangle
 
-    def __init__(self, value: str, waveform: Waveform):
+    def __init__(self, value, waveform: Waveform):
         self._waveform = waveform
 
     def __call__(self, t: np.ndarray[float]) -> ndarray[tuple[Any, ...], dtype[Any]]:
         return self._waveform(t)
+
+    def __repr__(self):
+        return self._waveform.__name__
+
+    def __str__(self):
+        return self._waveform.__name__
+
+    @classmethod
+    def from_name(cls, name: str) -> Self:
+        from_names = {str(member): member for member in cls}
+        return from_names[name]
+
+    @classmethod
+    def name_pattern(cls) -> str:
+        return f'(?P<Waveform>{'|'.join([str(member) for member in cls])})'
 
 class PlayingNote(NamedTuple):
     note: np.float64
@@ -64,6 +81,7 @@ class NotePlayer:
     def __init__(self, sample_freq: int, buffer_size: float):
         self._sample_freq: int = sample_freq
         self._buffer_size: int = int(buffer_size * sample_freq)
+        self._buffer_time = self._buffer_size / sample_freq
         self._player: pa.PyAudio = pa.PyAudio()
         self._stream = self._player.open(format=pa.paFloat32,
                                          channels=1,
@@ -101,6 +119,9 @@ class NotePlayer:
         for note, waveform in zip(notes, waveforms):
             self._add_note_to_queue(note, waveform, new_queue)
         self._notes_queue = new_queue
+
+    def read_sheet_music(self, note_sheet: NoteSheet):
+        ...
 
     def play(self):
         """
