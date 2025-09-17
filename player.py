@@ -98,6 +98,20 @@ class NotePlayer:
             self._add_sound_to_queue(sound, new_queue)
         self._notes_queue = new_queue
 
+    def process_notes(self, notes_to_play: list[ReadNote], beat_time: float, current_notes) -> list[PlayingNote]:
+        for note_to_play in notes_to_play:
+            note_as_sound: Sound = Sound(note_to_play.note.freq, note_to_play.wave)
+            if note_as_sound not in [read_note.sound for read_note in current_notes]:
+                duration = note_to_play.beats * beat_time
+                new_playing_note: PlayingNote = PlayingNote(sound=note_as_sound,
+                                                            duration_in_seconds=duration
+                                                            )
+                current_notes.append(new_playing_note)
+        current_notes = [note for note in current_notes if note.alive]
+        for note in current_notes:
+            note.decrease_duration(self._buffer_time)
+        return current_notes
+
     def play_from_sheet_music(self, note_sheet: NoteSheet):
         beat_time = note_sheet.beat_time
         play_time = note_sheet.play_time
@@ -114,15 +128,7 @@ class NotePlayer:
             if current_beat > len(all_notes):
                 break
             notes_to_play: list[ReadNote] = all_notes[min(current_beat, len(all_notes)- 1)]
-            for note_to_play in notes_to_play:
-                note_as_sound: Sound = Sound(note_to_play.note.freq, note_to_play.wave)
-                if note_as_sound not in [read_note.sound for read_note in current_notes]:
-                    new_playing_note: PlayingNote = PlayingNote(sound=note_as_sound, duration_in_seconds=note_to_play.beats*beat_time)
-                    current_notes.append(new_playing_note)
-            for note in current_notes:
-                note.decrease_duration(self._buffer_time)
-
-            current_notes = [note for note in current_notes if note.alive]
+            current_notes = self.process_notes(notes_to_play, beat_time, current_notes)
             current_notes_as_sounds = [note.sound for note in current_notes]
             self.set_sounds(current_notes_as_sounds)
             new_buffer: bytes = self.export_buffer()
@@ -157,18 +163,5 @@ class NotePlayer:
         Calculate waveforms for currently playing note and write to
         the buffer to play them.
         """
-        component_waves: list[np.ndarray[dtype[np.float32]]] = []
-        sound: Sound
-        note_data: tuple[np.ndarray[float], float]
-
-        for sound, note_data in self._notes_queue.items():
-            wave_gen: Waveform = sound.waveform
-            wave: np.ndarray[tuple[Any, ...], dtype[Any]] = wave_gen(note_data[0]) * note_data[1]
-            component_waves.append(wave.astype(np.float32))
-        if component_waves:
-            wave = np.sum(component_waves, axis=0) / len(component_waves)
-        else:
-            wave = np.zeros(self._buffer_size, dtype=np.float32)
-
-        output_bytes = wave.tobytes()
+        output_bytes = self.export_buffer()
         self._stream.write(output_bytes)
