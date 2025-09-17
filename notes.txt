@@ -1,0 +1,15 @@
+120
+0 A4-square-2 C#4-square-2 E4-square-2
+2 A4-square-2 C#4-square-2 E4-square-2 F#4-square-2
+4 A4-square-2 C#4-square-2 E4-square-2 G4-square-2
+6 A4-square-2 C#4-square-2 E4-square-2 F#4-square-2
+8 A4-square-2 C#4-square-2 E4-square-2
+10 A4-square-2 C#4-square-2 E4-square-2 F#4-square-2
+12 A4-square-2 C#4-square-2 E4-square-2 G4-square-2
+14 A4-square-2 C#4-square-2 E4-square-2 F#4-square-2
+16 D4-triangle-2 F#4-triangle-2 A5-triangle-2
+18 C#4-triangle-2 F#4-triangle-2 A5-triangle-2
+20 E4-triangle-2 G#4-triangle-2 B5-triangle-2
+22 D4-triangle-2 F#4-triangle-2 A5-triangle-2
+24 C#4-triangle-2 F#4-triangle-2 A5-triangle-2
+26 A4-triangle-4 C#4-triangle-2 E4-triangle-2 A5-triangle-2
