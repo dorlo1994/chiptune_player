@@ -9,6 +9,9 @@ class ReadNote(NamedTuple):
     wave: Wave
 
 class NoteSheet:
+    """
+    Hodls a list of beats and the notes each of them contains.
+    """
     DURATION_PATTERN = r'(?P<duration>\d+(?:\.\d+)?)'
     READ_NOTE_PATTERN = fr'{Note.NAME_PATTERN}-{Wave.name_pattern()}-{DURATION_PATTERN}'
     def __init__(self, bpm: int):
@@ -21,6 +24,9 @@ class NoteSheet:
 
     @property
     def play_time(self) -> float:
+        """
+        Calculates length of notes in seconds.
+        """
         if not self._sheet:
             return 0.0
         return (len(self._sheet) + max([note.beats for note in self._sheet[-1]])) * self.beat_time
@@ -33,19 +39,28 @@ class NoteSheet:
         self._sheet = list()
         last_index = 0
         for beat in notes:
+            # Get index of current beat
             beat_index = int(beat.pop(0))
+            # Insert empty beats in between
             while last_index < beat_index:
                 self._sheet.append(list())
                 last_index += 1
             notes_in_beat = list()
             for read_note_str in beat:
-                note_name, note_octave, wave, duration = re.match(self.READ_NOTE_PATTERN, read_note_str).groups()
-                note = Note(f'{note_name}{note_octave}')
-                wave = Wave.from_name(wave)
-                duration = float(duration)
-                read_note = ReadNote(note, duration, wave)
+                read_note = self.process_str(read_note_str)
                 notes_in_beat.append(read_note)
             self._sheet.append(notes_in_beat)
+
+    def process_str(self, note_str: str) -> ReadNote:
+        """
+        Parses a string describing a note into a named tuple.
+        """
+        note_name, note_octave, wave, duration = re.match(self.READ_NOTE_PATTERN, note_str).groups()
+        note = Note(f'{note_name}{note_octave}')
+        wave = Wave.from_name(wave)
+        duration = float(duration)
+        read_note = ReadNote(note, duration, wave)
+        return read_note
 
     def __str__(self):
         if not self._sheet:
@@ -78,24 +93,6 @@ class MusicFileReader:
             self.file.close()
         # Returning False will re-raise any exception that occurred
         return False
-
-    def read(self):
-        """Read the entire file content."""
-        if self.file:
-            return self.file.read()
-        raise ValueError("File is not open.")
-
-    def readline(self):
-        """Read a single line from the file."""
-        if self.file:
-            return self.file.readline()
-        raise ValueError("File is not open.")
-
-    def readlines(self):
-        """Read all lines as a list."""
-        if self.file:
-            return self.file.readlines()
-        raise ValueError("File is not open.")
 
     def read_notes(self):
         """

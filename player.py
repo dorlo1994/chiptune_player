@@ -98,7 +98,7 @@ class NotePlayer:
             self._add_sound_to_queue(sound, new_queue)
         self._notes_queue = new_queue
 
-    def process_notes(self, notes_to_play: list[ReadNote], beat_time: float, current_notes) -> list[PlayingNote]:
+    def process_notes(self, notes_to_play: list[ReadNote], beat_time: float, current_notes: list[PlayingNote]) -> list[PlayingNote]:
         for note_to_play in notes_to_play:
             note_as_sound: Sound = Sound(note_to_play.note.freq, note_to_play.wave)
             if note_as_sound not in [read_note.sound for read_note in current_notes]:
@@ -108,6 +108,7 @@ class NotePlayer:
                                                             )
                 current_notes.append(new_playing_note)
         current_notes = [note for note in current_notes if note.alive]
+        # Subtract the length of the current buffer from the duration of currently playing notes.
         for note in current_notes:
             note.decrease_duration(self._buffer_time)
         return current_notes

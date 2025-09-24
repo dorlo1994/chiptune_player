@@ -3,7 +3,7 @@ from file_reader import MusicFileReader, NoteSheet
 
 
 def main():
-    subdivision = 100
+    subdivision = 1000.0
     note_filename = 'notes.txt'
     with MusicFileReader(note_filename) as reader:
         note_sheet: NoteSheet = reader.read_notes()
