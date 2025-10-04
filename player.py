@@ -11,6 +11,9 @@ class Sound(NamedTuple):
     waveform: Wave
 
 class PlayingNote:
+    """
+    Encapsulates a note to be played.
+    """
     def __init__(self, sound: Sound, duration_in_seconds: float):
         self.sound = sound
         self._duration = duration_in_seconds
@@ -98,7 +101,10 @@ class NotePlayer:
             self._add_sound_to_queue(sound, new_queue)
         self._notes_queue = new_queue
 
-    def process_notes(self, notes_to_play: list[ReadNote], beat_time: float, current_notes) -> list[PlayingNote]:
+    def process_notes(self, notes_to_play: list[ReadNote], beat_time: float, current_notes: list[PlayingNote]) -> list[PlayingNote]:
+        """
+        Adds bew nodes to the list of notes to play, given a specific beat number.
+        """
         for note_to_play in notes_to_play:
             note_as_sound: Sound = Sound(note_to_play.note.freq, note_to_play.wave)
             if note_as_sound not in [read_note.sound for read_note in current_notes]:
@@ -108,11 +114,17 @@ class NotePlayer:
                                                             )
                 current_notes.append(new_playing_note)
         current_notes = [note for note in current_notes if note.alive]
+        # Subtract the length of the current buffer from the duration of currently playing notes.
         for note in current_notes:
             note.decrease_duration(self._buffer_time)
         return current_notes
 
     def play_from_sheet_music(self, note_sheet: NoteSheet):
+        """
+        Play music directly from NoteSheet object.
+        """
+
+        # Calculate some necessary values
         beat_time = note_sheet.beat_time
         play_time = note_sheet.play_time
         total_samples = self._sample_freq * play_time
@@ -124,6 +136,7 @@ class NotePlayer:
         current_notes: list[PlayingNote] = list()
         all_notes: list[list[ReadNote]] = note_sheet.get_notes()
         buffers: list[bytes] = list()
+        # Iterate over buffers and add notes according to the given beat number.
         for buffer in range(num_buffers):
             if current_beat > len(all_notes):
                 break
@@ -139,6 +152,9 @@ class NotePlayer:
         self.play_buffers(buffers)
 
     def export_buffer(self) -> bytes:
+        """
+        Returns a buffer of bytes to pass on to audio device.
+        """
         component_waves: list[np.ndarray[dtype[np.float32]]] = []
         sound: Sound
         note_data: tuple[np.ndarray[float], float]
