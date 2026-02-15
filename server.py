@@ -21,7 +21,7 @@ app.add_middleware(
 def render(notes_text: str = Body(..., media_type="text/plain")):
     lines = [line.split() for line in notes_text.strip().splitlines()]
     note_sheet: NoteSheet = parse_lines(lines)
-    player = NotePlayer(44100, 1.2 / subdivision)
+    player = NotePlayer(44000, 1.0 / subdivision)
     wav_bytes = player.render_from_sheet(note_sheet)
 
     return Response(
