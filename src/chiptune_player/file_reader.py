@@ -74,6 +74,20 @@ class NoteSheet:
         return self._sheet
 
 
+def parse_lines(lines: list[str]) -> NoteSheet:
+    notes: list[list[str]] = []
+    note_sheet = None
+    for line in lines:
+       if not note_sheet:
+           note_sheet = NoteSheet(bpm=int(line[0]))
+           continue
+
+       notes_in_line: list[str] = line
+       notes.append(notes_in_line)
+
+    note_sheet.set_notes(notes)
+    return note_sheet
+
 class MusicFileReader:
     def __init__(self, filename, mode="r", encoding="utf-8"):
         self.filename = filename
@@ -100,14 +114,13 @@ class MusicFileReader:
         """
         if not self.file:
             raise ValueError("File is not open.")
-
         notes: list[list[str]] = []
-        for line in self.file.readlines():
+        for line in self.file:
            if not self._note_sheet:
                self._note_sheet = NoteSheet(bpm=int(line))
                continue
 
-           notes_in_line: list[str] = line.split(' ')
-           notes.append(notes_in_line)
+        notes_in_line: list[str] = line.split(' ')
+        notes.append(notes_in_line)
         self._note_sheet.set_notes(notes=notes)
         return self._note_sheet
