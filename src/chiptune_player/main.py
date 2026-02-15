@@ -10,7 +10,7 @@ def main():
     player = NotePlayer(44100, 1.2 / subdivision)
     wav_data = player.render_from_sheet(note_sheet)
     with open('output.wav', 'wb') as f:
-        f.write(wav_data.read())
+        f.write(wav_data)
 
 
 if __name__ == "__main__":

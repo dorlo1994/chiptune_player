@@ -177,4 +177,4 @@ class NotePlayer:
             wf.writeframes(scaled.tobytes())
 
         buffer.seek(0)
-        return buffer
+        return buffer.read()

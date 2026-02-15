@@ -13,6 +13,6 @@ def render():
         media_type="audio/wav"
     )
 
-@app.post("/health")
+@app.get("/health")
 def health():
     return {"status": "ok"}
