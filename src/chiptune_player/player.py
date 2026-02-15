@@ -1,5 +1,4 @@
 import numpy as np
-import pyaudio as pa
 from numpy import dtype
 from typing import NamedTuple, Any
 
@@ -40,19 +39,8 @@ class NotePlayer:
         self._sample_freq: int = sample_freq
         self._buffer_size: int = int(buffer_size * sample_freq)
         self._buffer_time = self._buffer_size / sample_freq
-        self._player: pa.PyAudio = pa.PyAudio()
-        self._stream = self._player.open(format=pa.paFloat32,
-                                         channels=1,
-                                         rate=self._sample_freq,
-                                         output=True)
         self._notes_queue: dict[Sound: tuple[list[float], float]] = dict()
         self._base_func: np.ndarray[dtype: np.float32] = 2 * np.pi * np.arange(self._buffer_size)
-
-    def __del__(self):
-        if self.__getattribute__("_stream"):
-            self._stream.stop_stream()
-            self._stream.close()
-            self._player.terminate()
 
     def _add_note_to_queue(self, note: Note, waveform: Wave, new_queue: dict[Sound: tuple[float, float]]):
         """
@@ -169,15 +157,3 @@ class NotePlayer:
             wave = np.zeros(self._buffer_size, dtype=np.float32)
 
         return wave.tobytes()
-
-    def play_buffers(self, buffers: list[bytes]):
-        for buffer in buffers:
-            self._stream.write(buffer)
-
-    def play(self):
-        """
-        Calculate waveforms for currently playing note and write to
-        the buffer to play them.
-        """
-        output_bytes = self.export_buffer()
-        self._stream.write(output_bytes)

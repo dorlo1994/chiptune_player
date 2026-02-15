@@ -8,7 +8,6 @@ def main():
     with MusicFileReader(note_filename) as reader:
         note_sheet: NoteSheet = reader.read_notes()
     player = NotePlayer(44100, 1.2 / subdivision)
-    player.play_from_sheet_music(note_sheet)
 
 
 if __name__ == "__main__":

@@ -85,6 +85,7 @@ class MusicFileReader:
     def __enter__(self):
         # Open the file when entering context
         self.file = open(self.filename, self.mode, encoding=self.encoding)
+        print("Opened file")
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
