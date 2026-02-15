@@ -1,0 +1,19 @@
+[project]
+name = "chiptune_player"
+version = "0.1.0"
+description = "Chiptune synthesizer engine"
+authors = [{ name = "Dor Lotan" }]
+dependencies = [
+    "numpy",
+    "fastapi",
+    "uvicorn"
+]
+requires-python = ">=3.12"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

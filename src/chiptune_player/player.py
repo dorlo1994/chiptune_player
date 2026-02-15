@@ -1,10 +1,12 @@
 import numpy as np
-import pyaudio as pa
+import wave
+import io
+
 from numpy import dtype
 from typing import NamedTuple, Any
 
-from file_reader import NoteSheet, ReadNote
-from music_utils import Note, Wave, Waveform
+from .file_reader import NoteSheet, ReadNote
+from .music_utils import Note, Wave, Waveform
 
 class Sound(NamedTuple):
     note: np.float64
@@ -40,19 +42,8 @@ class NotePlayer:
         self._sample_freq: int = sample_freq
         self._buffer_size: int = int(buffer_size * sample_freq)
         self._buffer_time = self._buffer_size / sample_freq
-        self._player: pa.PyAudio = pa.PyAudio()
-        self._stream = self._player.open(format=pa.paFloat32,
-                                         channels=1,
-                                         rate=self._sample_freq,
-                                         output=True)
         self._notes_queue: dict[Sound: tuple[list[float], float]] = dict()
         self._base_func: np.ndarray[dtype: np.float32] = 2 * np.pi * np.arange(self._buffer_size)
-
-    def __del__(self):
-        if self.__getattribute__("_stream"):
-            self._stream.stop_stream()
-            self._stream.close()
-            self._player.terminate()
 
     def _add_note_to_queue(self, note: Note, waveform: Wave, new_queue: dict[Sound: tuple[float, float]]):
         """
@@ -119,7 +110,7 @@ class NotePlayer:
             note.decrease_duration(self._buffer_time)
         return current_notes
 
-    def play_from_sheet_music(self, note_sheet: NoteSheet):
+    def render_from_sheet(self, note_sheet: NoteSheet):
         """
         Play music directly from NoteSheet object.
         """
@@ -135,7 +126,7 @@ class NotePlayer:
 
         current_notes: list[PlayingNote] = list()
         all_notes: list[list[ReadNote]] = note_sheet.get_notes()
-        buffers: list[bytes] = list()
+        rendered_audio = list()
         # Iterate over buffers and add notes according to the given beat number.
         for buffer in range(num_buffers):
             if current_beat > len(all_notes):
@@ -144,12 +135,17 @@ class NotePlayer:
             current_notes = self.process_notes(notes_to_play, beat_time, current_notes)
             current_notes_as_sounds = [note.sound for note in current_notes]
             self.set_sounds(current_notes_as_sounds)
-            new_buffer: bytes = self.export_buffer()
-            buffers.append(new_buffer)
+            new_buffer = self.export_buffer()
+            rendered_audio.append(new_buffer)
             current_time += self._buffer_time
             current_beat = int(current_time / beat_time)
 
-        self.play_buffers(buffers)
+        if not rendered_audio:
+            return b""
+
+        full_wave = np.concatenate(rendered_audio)
+
+        return self.render_wav_bytes(full_wave)
 
     def export_buffer(self) -> bytes:
         """
@@ -161,23 +157,24 @@ class NotePlayer:
 
         for sound, note_data in self._notes_queue.items():
             wave_gen: Waveform = sound.waveform
-            wave: np.ndarray[tuple[Any, ...], dtype[Any]] = wave_gen(note_data[0]) * note_data[1]
-            component_waves.append(wave.astype(np.float32))
+            wave_data: np.ndarray[tuple[Any, ...], dtype[Any]] = wave_gen(note_data[0]) * note_data[1]
+            component_waves.append(wave_data.astype(np.float32))
         if component_waves:
-            wave = np.sum(component_waves, axis=0) / len(component_waves)
+            wave_data = np.sum(component_waves, axis=0) / len(component_waves)
         else:
-            wave = np.zeros(self._buffer_size, dtype=np.float32)
+            wave_data = np.zeros(self._buffer_size, dtype=np.float32)
 
-        return wave.tobytes()
+        return wave_data
 
-    def play_buffers(self, buffers: list[bytes]):
-        for buffer in buffers:
-            self._stream.write(buffer)
+    def render_wav_bytes(self, wave_data):
+        scaled = np.int16(wave_data * 32767)
+        buffer = io.BytesIO()
 
-    def play(self):
-        """
-        Calculate waveforms for currently playing note and write to
-        the buffer to play them.
-        """
-        output_bytes = self.export_buffer()
-        self._stream.write(output_bytes)
+        with wave.open(buffer, 'wb') as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(self._sample_freq)
+            wf.writeframes(scaled.tobytes())
+
+        buffer.seek(0)
+        return buffer.read()
