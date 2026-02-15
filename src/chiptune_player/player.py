@@ -5,8 +5,8 @@ import io
 from numpy import dtype
 from typing import NamedTuple, Any
 
-from file_reader import NoteSheet, ReadNote
-from music_utils import Note, Wave, Waveform
+from .file_reader import NoteSheet, ReadNote
+from .music_utils import Note, Wave, Waveform
 
 class Sound(NamedTuple):
     note: np.float64

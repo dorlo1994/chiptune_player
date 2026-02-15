@@ -1,5 +1,5 @@
-from player import NotePlayer
-from file_reader import MusicFileReader, NoteSheet
+from .player import NotePlayer
+from .file_reader import MusicFileReader, NoteSheet
 
 
 def main():

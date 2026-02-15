@@ -1,6 +1,6 @@
 import re
 
-from music_utils import Note, Wave, Wave, Wave, Wave
+from .music_utils import Note, Wave, Wave, Wave, Wave
 from typing import NamedTuple
 
 class ReadNote(NamedTuple):
